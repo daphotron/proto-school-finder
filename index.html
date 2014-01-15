@@ -74,6 +74,14 @@
     font-size: 12px;
     padding: 0.5em 0;
   }
+  .results {
+    clear: both;
+    padding: 1em 0 0;
+  }
+  .results .popup {
+    display: inline-block;
+    padding-right: 1.5em;
+  }
 </style>
 </head>
 
@@ -84,6 +92,8 @@
     </h1>
     <input id="js-zip" type="text" placeholder="zip code">
     <input id="js-submit" type="submit" value="search">
+    <div id="js-results" class="results">
+    </div>
   </div>
   <div id="map-canvas"></div>
 
@@ -203,9 +213,10 @@
 
           // Creates array of top three places.
           var topThreePlaces = places.results.sort(function(a, b) { return a.distance - b.distance }).slice(0, 3);
+          var results = '';
 
           for (i = 0; i <= topThreePlaces.length - 1; i++) {
-            content =
+            results += content =
             '<div class="popup">'
               + '<div class="popup-label">'
                 + topThreePlaces[i].name
@@ -221,6 +232,7 @@
             ;
             codeAddress(map, infowindow, content, topThreePlaces[i].city + ', ' + topThreePlaces[i].state);
           }
+          $('#js-results').html(results);
       });
       //http://maps.googleapis.com/maps/api/geocode/json?address=New_York,+NY,+11361&sensor=false
     });
