@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Test Google Map</title>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+<meta charset="utf-8">
+<link href='http://fonts.googleapis.com/css?family=Roboto:300' rel='stylesheet' type='text/css'>
+<style>
+  html, body {
+    height: 98%;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 100;
+  }
+  h1 {
+    font-weight: 100;
+    margin: 0 0 0.5em;
+  }
+  #map-canvas, #map_canvas {
+    height: 88%;
+    width: 100%;
+  }
+  @media print {
+    html, body {
+      height: auto;
+    }
+    #map-canvas, #map_canvas {
+      height: 650px;
+    }
+  }
+  .block {
+    padding: 1em 1em 1.5em;
+  }
+  input {
+    border: 0;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.5em;
+    font-weight: 100;
+    height: 1.7em;
+    margin: 0;
+    padding: 0;
+  }
+  input[type=text] {
+    background: #eee;
+    font-weight: 100;
+    float: left;
+    text-indent: 0.2em;
+  }
+  input[type=submit] {
+    background-color: #666;
+    color: #f1f1f1;
+    padding: 0 1em;
+  }
+  input[type=submit]:hover {
+    background-color: #ccc;
+    color: #222;
+    cursor: pointer;
+  }
+  .popup {
+    font-family: Arial, san-serif;
+  }
+  .popup a {
+    color: #9dc82a;
+  }
+  .popup-label {
+    font-size: 14px;
+    padding-top: 0.5em;
+    text-transform: uppercase;
+  }
+  .popup-detail {
+    font-size: 12px;
+    padding: 0.5em 0;
+  }
+</style>
+</head>
+
+<body>
+  <div class="block">
+    <h1>
+      Find a school near you
+    </h1>
+    <input id="js-zip" type="text" placeholder="zip code">
+    <input id="js-submit" type="submit" value="search">
+  </div>
+  <div id="map-canvas"></div>
+
+<script src="modernizr.min.js"></script>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="jquery.min.js"><\/script>')</script>
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+<script>
+  // Helper function.
+  Object.size = function(obj) {
+    var size = 0, key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+  };
+
+  // Find your location
+  function show_map(position) {
+    var latitude = position.coords.latitude;
+    var longitude = position.coords.longitude;
+    // let's show a map or do something interesting!
+  }
+  if (Modernizr.geolocation) {
+    //var location  = navigator.geolocation.getCurrentPosition(show_map);
+  } else {
+  }
+
+  // Grab JSON.
+  $.getJSON('places.json').done(function(data) {
+    // Initialize whole map upon json retrieval.
+    //initialize(data);
+    bindForm(data);
+  });
+
+  function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+    var R = 6371; // Radius of the earth in km
+    var dLat = deg2rad(lat2-lat1);  // deg2rad below
+    var dLon = deg2rad(lon2-lon1); 
+    var a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2)
+      ; 
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var d = R * c; // Distance in km
+    return d;
+  }
+  function deg2rad(deg) {
+    return deg * (Math.PI/180)
+  }
+
+  //------------------------------------------------------------------
+  // FUNCTIONS
+  //------------------------------------------------------------------
+
+  // Create popup bubble.
+  function makeInfoWindowEvent(map, infowindow, contentString, marker) {
+    google.maps.event.addListener(marker, 'click', function() {
+      infowindow.setContent(contentString);
+      infowindow.open(map, marker);
+    });
+  }
+
+  // @TODO: Can receive latitude and longitude in the json so we do not go over geocode limits.
+  function codeAddress(map, infowindow, content, address) {
+    geocoder.geocode( { 'address': address}, function(results, status) {
+      if (status === google.maps.GeocoderStatus.OK) {
+        var marker = new google.maps.Marker({
+            map: map,
+            position: results[0].geometry.location
+        });
+        var markers = [];
+
+        // Create popup if Geocode look up is successful.
+        makeInfoWindowEvent(map, infowindow, content, marker); // + " <br>counter: " + i, marker);
+        markers.push(marker);
+
+      } else {
+        alert("Geocode was not successful for the following reason: " + status);
+      }
+    });
+  }
+
+  // Needs to be defined globally.
+  var geocoder = new google.maps.Geocoder();
+
+  function bindForm(data) {
+    var places = data;
+
+    // Lookup zip code
+    $('#js-submit').bind('click', function() {
+
+      var zip = $('#js-zip').val();
+      infowindow = new google.maps.InfoWindow();
+
+      mapOptions = {
+        zoom: 10,
+        center: new google.maps.LatLng(40.7, -73.8),
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+      };
+      map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+      
+      // Print your current zip
+      //codeAddress(map, infowindow, '', zip);
+
+      // Grab lat and longitude from user input zip code.
+      $.getJSON('http://maps.googleapis.com/maps/api/geocode/json?address=New_York,+NY,+' + zip + ' &sensor=false').done(function(data) {
+          // Grab lat and long from user zip code.
+          var userLat = data.results[0].geometry.location.lat;
+          var userLng = data.results[0].geometry.location.lng;
+
+          // Push distance into retrieved json.
+          for (i = 0; i <= Object.size(places.results) - 1; i++) {
+            places.results[i].distance = getDistanceFromLatLonInKm(userLat, userLng, places.results[i].lat, places.results[i].lon);
+          }
+
+          for (i = 0; i <= Object.size(places.results) - 1; i++) {
+            //places.results[i].distance.sort(function(a, b) { return a - b }).slice(0, 3);
+          }
+
+          for (i = 0; i <= Object.size(places.results) - 1; i++) {
+            content =
+            '<div class="popup">'
+              + '<div class="popup-label">'
+                + places.results[i].name
+              + '</div>'
+              + '<div class="popup-detail">'
+                + places.results[i].street
+                + '<br>'
+                + places.results[i].city + ', ' + places.results[i].state + ' ' + places.results[i].zip
+                + '<br>'
+                + 'Distance: ' + Math.round(places.results[i].distance) + 'km'
+              + '</div>'
+            + '</div>'
+            ;
+            codeAddress(map, infowindow, content, places.results[i].city + ', ' + places.results[i].state);
+          }
+      });
+      //http://maps.googleapis.com/maps/api/geocode/json?address=New_York,+NY,+11361&sensor=false
+    });
+  }
+
+  // Initialize whole map on page load.
+  // function initialize(data) {
+  //   var mapOptions,
+  //       map,
+  //       infowindow,
+  //       i,
+  //       content;
+
+  //   mapOptions = {
+  //     zoom: 10,
+  //     center: new google.maps.LatLng(40.7, -73.8),
+  //     mapTypeId: google.maps.MapTypeId.ROADMAP
+  //   };
+  //   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+  //   infowindow = new google.maps.InfoWindow();
+  //   for (i = 0; i <= Object.size(data.results) - 1; i++) {
+  //     content =
+  //     '<div class="popup">'
+  //       + '<div class="popup-label">'
+  //         + data.results[i].name
+  //       + '</div>'
+  //       + '<div class="popup-detail">'
+  //         + data.results[i].street
+  //         + '<br>'
+  //         + data.results[i].city + ', ' + data.results[i].state + ' ' + data.results[i].zip
+  //       + '</div>'
+  //     + '</div>'
+  //     ;
+  //     codeAddress(map, infowindow, content, data.results[i].city + ', ' + data.results[i].state);
+  //   }
+  // }
+  // google.maps.event.addDomListener(window, 'load', initialize);
+</script>
+</body>
+</html>
