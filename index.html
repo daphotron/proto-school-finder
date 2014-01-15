@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Test Google Map</title>
+<title>Proto School Finder</title>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
 <meta charset="utf-8">
 <link href='http://fonts.googleapis.com/css?family=Roboto:300' rel='stylesheet' type='text/css'>
@@ -201,26 +201,25 @@
             places.results[i].distance = getDistanceFromLatLonInKm(userLat, userLng, places.results[i].lat, places.results[i].lon);
           }
 
-          for (i = 0; i <= Object.size(places.results) - 1; i++) {
-            //places.results[i].distance.sort(function(a, b) { return a - b }).slice(0, 3);
-          }
+          // Creates array of top three places.
+          var topThreePlaces = places.results.sort(function(a, b) { return a.distance - b.distance }).slice(0, 3);
 
-          for (i = 0; i <= Object.size(places.results) - 1; i++) {
+          for (i = 0; i <= topThreePlaces.length - 1; i++) {
             content =
             '<div class="popup">'
               + '<div class="popup-label">'
-                + places.results[i].name
+                + topThreePlaces[i].name
               + '</div>'
               + '<div class="popup-detail">'
-                + places.results[i].street
+                + topThreePlaces[i].street
                 + '<br>'
-                + places.results[i].city + ', ' + places.results[i].state + ' ' + places.results[i].zip
+                + topThreePlaces[i].city + ', ' + topThreePlaces[i].state + ' ' + topThreePlaces[i].zip
                 + '<br>'
-                + 'Distance: ' + Math.round(places.results[i].distance) + 'km'
+                + 'Distance: ' + Math.round(topThreePlaces[i].distance) + 'km'
               + '</div>'
             + '</div>'
             ;
-            codeAddress(map, infowindow, content, places.results[i].city + ', ' + places.results[i].state);
+            codeAddress(map, infowindow, content, topThreePlaces[i].city + ', ' + topThreePlaces[i].state);
           }
       });
       //http://maps.googleapis.com/maps/api/geocode/json?address=New_York,+NY,+11361&sensor=false
